@@ -7,7 +7,7 @@ import { useOutletContext } from 'react-router-dom';
 
 export function AnalyzePage() {
   const { addToHistory, updateHistoryItem } = useFileHistory();
-
+  const [loading, setLoading] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const [analysis, setAnalysis] = useState<any | null>(null); // Store classification results
@@ -45,6 +45,7 @@ export function AnalyzePage() {
   // Handle image classification via Flask backend
   const handleAnalyze = useCallback(async () => {
     if (!file || !currentFileId || !preview) return;
+    setLoading(true); // Set loading to true when analysis starts
 
     try {
       // Prepare the form data to send the image to the Flask backend
@@ -76,6 +77,8 @@ export function AnalyzePage() {
     } catch (error) {
       console.error('Error during analysis:', error);
       setAnalysis({ error: 'Failed to analyze the file. Please try again.' });
+    }finally {
+      setLoading(false); // Set loading to false when analysis completes
     }
   }, [file, currentFileId, preview, updateHistoryItem]);
 
@@ -191,6 +194,31 @@ ${analysis.iqa_score < 0.5 ? "The image quality is low. Ensure the file is not c
 
   return (
     <div>
+       <style>
+        {`
+          @keyframes loading {
+            from {
+              background-position: 100% 0;
+            }
+            to {
+              background-position: -100% 0;
+            }
+          }
+        `}
+      </style>
+    {loading ? (
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100px' }}>
+        <p>Image is processing...</p>
+        <div style={{
+          width: '100%',
+          height: '15px',
+          background: 'linear-gradient(to right, #4caf50 0%, #4caf50 50%, #ccc 50%, #ccc 100%)',
+          backgroundSize: '200% 100%',
+          animation: 'loading 1.5s infinite'
+        }}></div>
+      </div>
+      ) : (
+    <div>
       <PageHeader title="File Analysis" />
 
       {!file && <FileDropZone onFileDrop={handleFileDrop} />}
@@ -211,6 +239,10 @@ ${analysis.iqa_score < 0.5 ? "The image quality is low. Ensure the file is not c
           {analysis && renderReport()}
         </div>
       )}
+      
     </div>
+    )}
+    </div>
+    
   );
 }
